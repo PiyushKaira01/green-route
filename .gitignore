@@ -1,0 +1,6 @@
+venv/
+.vscode/
+data/*.csv
+graphs/*.graphml
+__pycache__/
+*.pyc
