@@ -1,34 +1,798 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Green Route Navigation</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        .container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        h1 { color: #2ecc71; text-align: center; }
-        label { font-weight: bold; margin-top: 10px; display: block; }
-        input { width: 100%; padding: 10px; margin: 5px 0 20px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background-color: #2ecc71; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
-        button:hover { background-color: #27ae60; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Green Route</title>
+
+  <!-- Leaflet.js -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Reset & Variables ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #080c08;
+      --panel:     #0e140e;
+      --border:    #1e2b1e;
+      --green:     #22ff7a;
+      --green-dim: #16a34a;
+      --amber:     #f59e0b;
+      --text:      #e2f0e2;
+      --muted:     #5a7a5a;
+      --danger:    #ff4d4d;
+      --font-ui:   'Syne', sans-serif;
+      --font-mono: 'Space Mono', monospace;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      overflow: hidden;
+    }
+
+    /* ── Layout ────────────────────────────────────────────────────────── */
+    .app {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* ── Sidebar ────────────────────────────────────────────────────────── */
+    .sidebar {
+      width: 360px;
+      min-width: 360px;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+      overflow-y: auto;
+    }
+
+    .logo {
+      padding: 28px 24px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo-mark {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--green);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .logo h1 {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+
+    .logo p {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── Form ───────────────────────────────────────────────────────────── */
+    .form-section {
+      padding: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .form-section h2 {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .input-group {
+      position: relative;
+      margin-bottom: 12px;
+    }
+
+    .input-dot {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      z-index: 1;
+    }
+
+    .input-dot.start { background: var(--green); }
+    .input-dot.end   { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+
+    .input-connector {
+      position: absolute;
+      left: 17px;
+      top: calc(100% + 0px);
+      width: 2px;
+      height: 12px;
+      background: var(--border);
+    }
+
+    input[type="text"] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px 12px 34px;
+      color: var(--text);
+      font-family: var(--font-ui);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--green-dim);
+    }
+
+    input[type="text"]::placeholder {
+      color: var(--muted);
+    }
+
+    /* ── Mode Toggle ────────────────────────────────────────────────────── */
+    .mode-toggle {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: all 0.2s;
+    }
+
+    .mode-btn.active {
+      background: var(--green);
+      color: var(--bg);
+      border-color: var(--green);
+      font-weight: 700;
+    }
+
+    /* ── Buttons ────────────────────────────────────────────────────────── */
+    .btn-primary {
+      width: 100%;
+      padding: 14px;
+      background: var(--green);
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      font-family: var(--font-ui);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 16px;
+      letter-spacing: 0.02em;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary:hover { background: #3dffa0; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .btn-secondary {
+      width: 100%;
+      padding: 11px;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary:hover { border-color: var(--green-dim); color: var(--green); }
+    .btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Results Panel ──────────────────────────────────────────────────── */
+    .results {
+      padding: 24px;
+      flex: 1;
+    }
+
+    .results h2 {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .stat-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 10px;
+      animation: slideIn 0.3s ease forwards;
+    }
+
+    .stat-card.green-card { border-color: #1e4d2e; }
+    .stat-card.short-card { border-color: #4d3a00; }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .card-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .card-label {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    .card-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .stat-item label {
+      display: block;
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+
+    .stat-item span {
+      font-size: 18px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+    }
+
+    .stat-item .unit {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 400;
+      margin-left: 2px;
+    }
+
+    /* ── Comparison Badge ───────────────────────────────────────────────── */
+    .comparison-badge {
+      background: #0d1f0d;
+      border: 1px solid #1e4d2e;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-top: 10px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--green);
+      line-height: 1.6;
+    }
+
+    .comparison-badge strong { color: var(--green); }
+
+    /* ── Loading State ──────────────────────────────────────────────────── */
+    .loading {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .loading.visible { display: flex; }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Error ──────────────────────────────────────────────────────────── */
+    .error-msg {
+      display: none;
+      background: #1a0808;
+      border: 1px solid #4d1515;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 12px;
+      font-family: var(--font-mono);
+      color: var(--danger);
+      margin-top: 12px;
+    }
+
+    .error-msg.visible { display: block; }
+
+    /* ── Map ────────────────────────────────────────────────────────────── */
+    #map {
+      flex: 1;
+      height: 100vh;
+    }
+
+    /* Leaflet dark override */
+    .leaflet-tile-pane { filter: brightness(0.9) saturate(0.8); }
+    .leaflet-control-attribution { display: none; }
+    .leaflet-control-zoom a {
+      background: var(--panel) !important;
+      color: var(--text) !important;
+      border-color: var(--border) !important;
+    }
+
+    /* ── Status bar ─────────────────────────────────────────────────────── */
+    .status-bar {
+      padding: 12px 24px;
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* ── Empty state ────────────────────────────────────────────────────── */
+    .empty-state {
+      color: var(--muted);
+      font-size: 12px;
+      font-family: var(--font-mono);
+      line-height: 1.7;
+    }
+
+    .empty-state .hint {
+      margin-top: 8px;
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 11px;
+    }
+  </style>
 </head>
 <body>
-<div class="container">
-    <h1>🌱 Green Route</h1>
-    <form action="/calculate_route" method="POST">
-        <label>City/Region:</label>
-        <input type="text" name="city" required value="New Delhi, Delhi, India">
+<div class="app">
 
-        <label>Start Coordinates:</label>
-        <input type="text" name="start_coords" required value="28.6129, 77.2295">
+  <!-- ── Sidebar ──────────────────────────────────────────────────────── -->
+  <aside class="sidebar">
 
-        <label>Destination Coordinates:</label>
-        <input type="text" name="end_coords" required value="28.6304, 77.2177">
+    <!-- Logo -->
+    <div class="logo">
+      <div class="logo-mark">
+        <div class="logo-icon">🌱</div>
+        <h1>GreenRoute</h1>
+      </div>
+      <p>Eco-friendly navigation engine</p>
+    </div>
 
-        <button type="submit">Find Eco-Route</button>
-    </form>
+    <!-- Form -->
+    <div class="form-section">
+      <h2>Plan Route</h2>
+
+      <div class="input-group">
+        <div class="input-dot start"></div>
+        <input type="text" id="start" placeholder="Start location" value="India Gate, New Delhi" />
+        <div class="input-connector"></div>
+      </div>
+
+      <div class="input-group">
+        <div class="input-dot end"></div>
+        <input type="text" id="end" placeholder="Destination" value="Connaught Place, New Delhi" />
+      </div>
+
+      <!-- Mode toggle -->
+      <div class="mode-toggle">
+        <button class="mode-btn active" data-mode="green" onclick="setMode('green', this)">🌿 Green</button>
+        <button class="mode-btn" data-mode="shortest" onclick="setMode('shortest', this)">⚡ Shortest</button>
+        <button class="mode-btn" data-mode="compare" onclick="setMode('compare', this)">⚖ Compare</button>
+      </div>
+
+      <button class="btn-primary" id="routeBtn" onclick="findRoute()">Find Route</button>
+      <button class="btn-secondary" id="clearBtn" onclick="clearMap()">Clear Map</button>
+
+      <!-- Loading -->
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <span id="loadingText">Fetching road network...</span>
+      </div>
+
+      <!-- Error -->
+      <div class="error-msg" id="errorMsg"></div>
+    </div>
+
+    <!-- Results -->
+    <div class="results" id="results">
+      <h2>Route Info</h2>
+      <div class="empty-state">
+        Enter a start and destination above, then hit <strong style="color:var(--text)">Find Route</strong>.
+        <div class="hint">
+          💡 First request fetches live road data — may take ~15s.<br/>
+          Subsequent requests use cache and are instant.
+        </div>
+      </div>
+    </div>
+
+    <!-- Status bar -->
+    <div class="status-bar">
+      <div class="status-dot"></div>
+      <span id="statusText">API connected · localhost:5000</span>
+    </div>
+
+  </aside>
+
+  <!-- ── Map ──────────────────────────────────────────────────────────── -->
+  <div id="map"></div>
+
 </div>
+
+<script>
+  // ── Config ───────────────────────────────────────────────────────────────
+  // Points to Piyush's Flask backend. Change port if needed.
+  const API_BASE = "";
+
+  let currentMode = "green";
+  let map, routeLayers = [], markerLayers = [];
+
+  // ── Map Init ─────────────────────────────────────────────────────────────
+  map = L.map("map", {
+    center: [28.6139, 77.2090],
+    zoom: 13,
+    zoomControl: true,
+  });
+
+  // Dark CartoDB tiles
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    maxZoom: 19,
+  }).addTo(map);
+
+  // ── Mode Toggle ──────────────────────────────────────────────────────────
+  function setMode(mode, btn) {
+    currentMode = mode;
+    document.querySelectorAll(".mode-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+  }
+
+  // ── Routing ──────────────────────────────────────────────────────────────
+  async function findRoute() {
+    const start = document.getElementById("start").value.trim();
+    const end   = document.getElementById("end").value.trim();
+
+    if (!start || !end) {
+      showError("Please enter both a start location and destination.");
+      return;
+    }
+
+    clearMap();
+    setLoading(true);
+    hideError();
+
+    try {
+      if (currentMode === "compare") {
+        await fetchCompare(start, end);
+      } else {
+        await fetchRoute(start, end, currentMode);
+      }
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchRoute(start, end, mode) {
+    updateLoadingText("Calculating " + mode + " route...");
+
+    const res = await fetch(`${API_BASE}/route`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ start, end, mode }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Server error: ${res.status}`);
+    }
+
+    const data = await res.json();
+    drawRoute(data.route, mode === "green" ? "#22ff7a" : "#f59e0b", 5);
+    fitMap(data.route);
+    addMarkers(data.route);
+    showSingleResult(data);
+  }
+
+  async function fetchCompare(start, end) {
+    updateLoadingText("Comparing green vs shortest...");
+
+    const res = await fetch(`${API_BASE}/compare`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ start, end }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Server error: ${res.status}`);
+    }
+
+    const data = await res.json();
+
+    // Draw both routes
+    drawRoute(data.green.route,    "#22ff7a", 5);
+    drawRoute(data.shortest.route, "#f59e0b", 4, [8, 6]);
+
+    const allCoords = [...data.green.route, ...data.shortest.route];
+    fitMap(allCoords);
+    addMarkers(data.green.route);
+    showCompareResult(data.green, data.shortest);
+  }
+
+  // ── Map Drawing ──────────────────────────────────────────────────────────
+  function drawRoute(coords, color, weight = 5, dashArray = null) {
+    const layer = L.polyline(coords, {
+      color,
+      weight,
+      opacity: 0.9,
+      dashArray,
+      lineJoin: "round",
+      lineCap:  "round",
+    }).addTo(map);
+    routeLayers.push(layer);
+  }
+
+  function addMarkers(coords) {
+    if (!coords || coords.length === 0) return;
+
+    const startCoord = coords[0];
+    const endCoord   = coords[coords.length - 1];
+
+    const makeIcon = (color, label) => L.divIcon({
+      className: "",
+      html: `
+        <div style="
+          width:36px; height:36px;
+          background:${color};
+          border-radius:50% 50% 50% 0;
+          transform:rotate(-45deg);
+          border:3px solid #080c08;
+          box-shadow:0 2px 8px rgba(0,0,0,0.5);
+          display:flex; align-items:center; justify-content:center;
+        ">
+          <span style="transform:rotate(45deg);font-size:14px">${label}</span>
+        </div>`,
+      iconSize:   [36, 36],
+      iconAnchor: [18, 36],
+    });
+
+    const sm = L.marker(startCoord, { icon: makeIcon("#22ff7a", "A") }).addTo(map);
+    const em = L.marker(endCoord,   { icon: makeIcon("#f59e0b", "B") }).addTo(map);
+    markerLayers.push(sm, em);
+  }
+
+  function fitMap(coords) {
+    if (!coords || coords.length === 0) return;
+    map.fitBounds(L.latLngBounds(coords), { padding: [40, 40] });
+  }
+
+  // ── Results UI ───────────────────────────────────────────────────────────
+  function showSingleResult(data) {
+    const isGreen  = data.mode === "green";
+    const color    = isGreen ? "#22ff7a" : "#f59e0b";
+    const label    = isGreen ? "🌿 GREEN ROUTE" : "⚡ SHORTEST ROUTE";
+    const cardClass = isGreen ? "green-card" : "short-card";
+
+    document.getElementById("results").innerHTML = `
+      <h2>Route Info</h2>
+      <div class="stat-card ${cardClass}">
+        <div class="card-header">
+          <div class="card-dot" style="background:${color}; box-shadow:0 0 6px ${color}"></div>
+          <span class="card-label" style="color:${color}">${label}</span>
+        </div>
+        <div class="card-stats">
+          <div class="stat-item">
+            <label>Distance</label>
+            <span style="color:${color}">${(data.distance_m / 1000).toFixed(2)}<span class="unit">km</span></span>
+          </div>
+          <div class="stat-item">
+            <label>Green Score</label>
+            <span style="color:${color}">${data.green_cost?.toFixed ? data.green_cost.toFixed(0) : data.green_cost}<span class="unit">pts</span></span>
+          </div>
+          <div class="stat-item">
+            <label>Intersections</label>
+            <span style="color:${color}">${data.node_count}<span class="unit">nodes</span></span>
+          </div>
+          <div class="stat-item">
+            <label>Mode</label>
+            <span style="color:${color}; font-size:13px">${data.mode.toUpperCase()}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function showCompareResult(green, shortest) {
+    const distDiff   = ((shortest.distance_m - green.distance_m) / 1000).toFixed(2);
+    const costDiff   = (((shortest.green_cost - green.green_cost) / shortest.green_cost) * 100).toFixed(1);
+    const greenerStr = parseFloat(costDiff) > 0
+      ? `Green route is <strong>${costDiff}% more eco-friendly</strong>`
+      : `Routes have similar environmental impact`;
+
+    document.getElementById("results").innerHTML = `
+      <h2>Comparison</h2>
+
+      <div class="stat-card green-card">
+        <div class="card-header">
+          <div class="card-dot" style="background:#22ff7a; box-shadow:0 0 6px #22ff7a"></div>
+          <span class="card-label" style="color:#22ff7a">🌿 GREEN ROUTE</span>
+        </div>
+        <div class="card-stats">
+          <div class="stat-item">
+            <label>Distance</label>
+            <span style="color:#22ff7a">${(green.distance_m / 1000).toFixed(2)}<span class="unit">km</span></span>
+          </div>
+          <div class="stat-item">
+            <label>Green Score</label>
+            <span style="color:#22ff7a">${green.green_cost?.toFixed ? green.green_cost.toFixed(0) : green.green_cost}<span class="unit">pts</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stat-card short-card">
+        <div class="card-header">
+          <div class="card-dot" style="background:#f59e0b; box-shadow:0 0 6px #f59e0b"></div>
+          <span class="card-label" style="color:#f59e0b">⚡ SHORTEST ROUTE</span>
+        </div>
+        <div class="card-stats">
+          <div class="stat-item">
+            <label>Distance</label>
+            <span style="color:#f59e0b">${(shortest.distance_m / 1000).toFixed(2)}<span class="unit">km</span></span>
+          </div>
+          <div class="stat-item">
+            <label>Green Score</label>
+            <span style="color:#f59e0b">${shortest.green_cost?.toFixed ? shortest.green_cost.toFixed(0) : shortest.green_cost}<span class="unit">pts</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="comparison-badge">
+        ${greenerStr}<br/>
+        Distance difference: <strong>${Math.abs(distDiff)} km</strong>
+      </div>
+    `;
+  }
+
+  // ── Utility ──────────────────────────────────────────────────────────────
+  function clearMap() {
+    routeLayers.forEach(l => map.removeLayer(l));
+    markerLayers.forEach(l => map.removeLayer(l));
+    routeLayers  = [];
+    markerLayers = [];
+    document.getElementById("results").innerHTML = `
+      <h2>Route Info</h2>
+      <div class="empty-state">
+        Enter a start and destination above, then hit <strong style="color:var(--text)">Find Route</strong>.
+        <div class="hint">
+          💡 First request fetches live road data — may take ~15s.<br/>
+          Subsequent requests use cache and are instant.
+        </div>
+      </div>
+    `;
+    hideError();
+  }
+
+  function setLoading(on) {
+    document.getElementById("loading").classList.toggle("visible", on);
+    document.getElementById("routeBtn").disabled = on;
+    document.getElementById("clearBtn").disabled = on;
+  }
+
+  function updateLoadingText(text) {
+    document.getElementById("loadingText").textContent = text;
+  }
+
+  function showError(msg) {
+    const el = document.getElementById("errorMsg");
+    el.textContent = "⚠ " + msg;
+    el.classList.add("visible");
+  }
+
+  function hideError() {
+    document.getElementById("errorMsg").classList.remove("visible");
+  }
+
+  // ── Enter key support ────────────────────────────────────────────────────
+  document.getElementById("start").addEventListener("keydown", e => { if (e.key === "Enter") findRoute(); });
+  document.getElementById("end").addEventListener("keydown",   e => { if (e.key === "Enter") findRoute(); });
+
+  // ── API health check ─────────────────────────────────────────────────────
+  (async () => {
+    try {
+      const res = await fetch(`${API_BASE}/`);
+      if (res.ok) {
+        document.getElementById("statusText").textContent = "API connected · localhost:5000";
+      } else {
+        throw new Error();
+      }
+    } catch {
+      document.getElementById("statusText").textContent    = "⚠ API offline · start Flask server";
+      document.querySelector(".status-dot").style.background = "var(--danger)";
+      document.querySelector(".status-dot").style.boxShadow  = "0 0 6px var(--danger)";
+      document.querySelector(".status-dot").style.animation  = "none";
+    }
+  })();
+</script>
 </body>
 </html>
