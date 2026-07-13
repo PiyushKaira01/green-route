@@ -1,6 +1,19 @@
+# Python
 venv/
-.vscode/
-data/*.csv
-graphs/*.graphml
 __pycache__/
 *.pyc
+.idea/
+
+# Editor
+.vscode/
+
+# Generated data and artifacts (regenerated on demand)
+data/*.csv
+graphs/*.graphml
+models/*.pkl
+cache/
+web/cache/
+
+# OS / misc
+.DS_Store
+*.log
