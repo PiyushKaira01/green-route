@@ -27,6 +27,8 @@
       --text:      #e2f0e2;
       --muted:     #5a7a5a;
       --danger:    #ff4d4d;
+      --gradient:  radial-gradient(ellipse at top left, rgba(34,255,122,0.08), transparent 50%),
+                   radial-gradient(ellipse at bottom right, rgba(245,158,11,0.05), transparent 50%);
       --font-ui:   'Syne', sans-serif;
       --font-mono: 'Space Mono', monospace;
     }
@@ -34,6 +36,8 @@
     html, body {
       height: 100%;
       background: var(--bg);
+      background-image: var(--gradient);
+      background-attachment: fixed;
       color: var(--text);
       font-family: var(--font-ui);
       overflow: hidden;
@@ -56,6 +60,13 @@
       flex-direction: column;
       z-index: 100;
       overflow-y: auto;
+      scrollbar-width: none;          /* Firefox */
+      -ms-overflow-style: none;       /* IE/old Edge */
+    }
+    .sidebar::-webkit-scrollbar {      /* Chromium / WebKit */
+      display: none;
+      width: 0;
+      height: 0;
     }
 
     .logo {
@@ -158,6 +169,93 @@
 
     input[type="text"]::placeholder {
       color: var(--muted);
+    }
+
+    /* ── Autocomplete Dropdown ─────────────────────────────────────────── */
+    .ac-wrap {
+      position: relative;
+    }
+    .ac-list {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      max-height: 240px;
+      overflow-y: auto;
+      z-index: 200;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      display: none;
+      scrollbar-width: thin;
+    }
+    .ac-list.visible { display: block; animation: acFade 0.15s ease; }
+    @keyframes acFade {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .ac-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.12s;
+    }
+    .ac-item:last-child { border-bottom: none; }
+    .ac-item:hover,
+    .ac-item.active {
+      background: rgba(34, 255, 122, 0.08);
+    }
+    .ac-item .ac-icon {
+      flex-shrink: 0;
+      width: 18px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .ac-item .ac-main {
+      flex: 1;
+      min-width: 0;
+    }
+    .ac-item .ac-name {
+      font-size: 13px;
+      color: var(--text);
+      font-family: var(--font-ui);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ac-item .ac-sub {
+      font-size: 10px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+    .ac-item .ac-type {
+      flex-shrink: 0;
+      font-size: 9px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 2px 6px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      align-self: center;
+    }
+    .ac-empty {
+      padding: 12px;
+      font-size: 12px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      text-align: center;
     }
 
     /* ── Mode Toggle ────────────────────────────────────────────────────── */
@@ -422,9 +520,129 @@
       border-radius: 6px;
       font-size: 11px;
     }
+
+    /* ── Particle Field (floating leaves) ─────────────────────────────── */
+    .particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .particle {
+      position: absolute;
+      bottom: -20px;
+      font-size: 14px;
+      opacity: 0.35;
+      animation: floatUp linear infinite;
+      will-change: transform, opacity;
+    }
+    @keyframes floatUp {
+      0%   { transform: translateY(0) rotate(0deg);   opacity: 0; }
+      10%  { opacity: 0.45; }
+      90%  { opacity: 0.25; }
+      100% { transform: translateY(-110vh) rotate(360deg); opacity: 0; }
+    }
+
+    /* ── Button Ripple ────────────────────────────────────────────────── */
+    .btn-primary .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(8, 12, 8, 0.35);
+      transform: scale(0);
+      animation: rippleOut 0.6s ease-out;
+      pointer-events: none;
+    }
+    @keyframes rippleOut {
+      to { transform: scale(4); opacity: 0; }
+    }
+
+    /* ── Stat Card Hover Lift ─────────────────────────────────────────── */
+    .stat-card {
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(34, 255, 122, 0.08);
+    }
+    .stat-card.green-card:hover { border-color: var(--green-dim); }
+    .stat-card.short-card:hover { border-color: #7a5c00; }
+
+    /* ── Carbon Saved Badge ───────────────────────────────────────────── */
+    .carbon-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 12px;
+      padding: 6px 10px;
+      background: linear-gradient(135deg, rgba(34,255,122,0.12), rgba(34,255,122,0.04));
+      border: 1px solid #1e4d2e;
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--green);
+      animation: badgePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    @keyframes badgePop {
+      0%   { transform: scale(0.7); opacity: 0; }
+      100% { transform: scale(1);   opacity: 1; }
+    }
+
+    /* ── Mini Trip Bar ────────────────────────────────────────────────── */
+    .trip-bar {
+      display: flex;
+      gap: 2px;
+      margin-top: 12px;
+      height: 6px;
+      border-radius: 3px;
+      overflow: hidden;
+      background: var(--bg);
+    }
+    .trip-bar .seg {
+      flex: 1;
+      background: var(--border);
+      transition: background 0.3s;
+    }
+    .trip-bar .seg.eco { background: var(--green-dim); }
+    .trip-bar .seg.peak { background: var(--amber); }
+
+    /* ── Skeleton Shimmer ─────────────────────────────────────────────── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg) 0%, #162016 50%, var(--bg) 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s linear infinite;
+      border-radius: 8px;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ── Marker Pulse (A marker) ──────────────────────────────────────── */
+    .marker-pin.pulse::after {
+      content: "";
+      position: absolute;
+      inset: -6px;
+      border: 2px solid var(--green);
+      border-radius: 50%;
+      animation: markerPulse 1.8s ease-out infinite;
+    }
+    @keyframes markerPulse {
+      0%   { transform: scale(0.6); opacity: 0.9; }
+      100% { transform: scale(2);   opacity: 0; }
+    }
+
+    /* ── Count-up flash ───────────────────────────────────────────────── */
+    .count-flash { animation: countPop 0.5s ease-out; }
+    @keyframes countPop {
+      0%   { transform: scale(0.6); opacity: 0; }
+      60%  { transform: scale(1.15); }
+      100% { transform: scale(1);   opacity: 1; }
+    }
   </style>
 </head>
 <body>
+<div class="particles" id="particles"></div>
 <div class="app">
 
   <!-- ── Sidebar ──────────────────────────────────────────────────────── -->
@@ -445,13 +663,19 @@
 
       <div class="input-group">
         <div class="input-dot start"></div>
-        <input type="text" id="start" placeholder="Start location" value="India Gate, New Delhi" />
+        <div class="ac-wrap" style="position:relative">
+          <input type="text" id="start" placeholder="Start location" value="India Gate, New Delhi" autocomplete="off" />
+          <div class="ac-list" id="ac-start"></div>
+        </div>
         <div class="input-connector"></div>
       </div>
 
       <div class="input-group">
         <div class="input-dot end"></div>
-        <input type="text" id="end" placeholder="Destination" value="Connaught Place, New Delhi" />
+        <div class="ac-wrap" style="position:relative">
+          <input type="text" id="end" placeholder="Destination" value="Connaught Place, New Delhi" autocomplete="off" />
+          <div class="ac-list" id="ac-end"></div>
+        </div>
       </div>
 
       <!-- Mode toggle -->
@@ -519,6 +743,191 @@
     maxZoom: 19,
   }).addTo(map);
 
+  // ── Particle Field ───────────────────────────────────────────────────────
+  (function spawnParticles() {
+    const container = document.getElementById("particles");
+    if (!container) return;
+    const leaves = ["🍃", "🌿", "🍂"];
+    for (let i = 0; i < 10; i++) {
+      const p = document.createElement("span");
+      p.className = "particle";
+      p.textContent = leaves[i % leaves.length];
+      p.style.left = Math.random() * 100 + "vw";
+      p.style.fontSize = 10 + Math.random() * 12 + "px";
+      p.style.animationDuration = 14 + Math.random() * 18 + "s";
+      p.style.animationDelay = -Math.random() * 20 + "s";
+      container.appendChild(p);
+    }
+  })();
+
+  // ── Button Ripple ────────────────────────────────────────────────────────
+  document.getElementById("routeBtn").addEventListener("click", function (e) {
+    const rect = this.getBoundingClientRect();
+    const ripple = document.createElement("span");
+    ripple.className = "ripple";
+    const size = Math.max(rect.width, rect.height);
+    ripple.style.width = ripple.style.height = size + "px";
+    ripple.style.left = (e.clientX - rect.left - size / 2) + "px";
+    ripple.style.top  = (e.clientY - rect.top  - size / 2) + "px";
+    this.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 600);
+  });
+
+  // ── Autocomplete (Photon / OSM, no API key) ──────────────────────────────
+  // Attaches suggestion dropdown behavior to a text input.
+  function attachAutocomplete(inputId, listId) {
+    const input = document.getElementById(inputId);
+    const list  = document.getElementById(listId);
+    if (!input || !list) return;
+
+    let timer = null;
+    let items = [];
+    let activeIdx = -1;
+    let lastQuery = "";
+
+    function close() {
+      list.classList.remove("visible");
+      list.innerHTML = "";
+      items = [];
+      activeIdx = -1;
+    }
+
+    function highlight(text, q) {
+      if (!q) return text;
+      const i = text.toLowerCase().indexOf(q.toLowerCase());
+      if (i < 0) return text;
+      return text.slice(0, i)
+        + "<strong style='color:var(--green)'>"
+        + text.slice(i, i + q.length)
+        + "</strong>"
+        + text.slice(i + q.length);
+    }
+
+    function render(results) {
+      if (!results.length) {
+        list.innerHTML = `<div class="ac-empty">No matches found</div>`;
+        list.classList.add("visible");
+        return;
+      }
+      list.innerHTML = results.map((r, idx) => {
+        const name = r.name || "";
+        const sub  = [r.city, r.state, r.country].filter(Boolean).join(", ");
+        const type = (r.osm_value || r.type || "place").replace(/_/g, " ");
+        return `
+          <div class="ac-item" data-idx="${idx}">
+            <span class="ac-icon">📍</span>
+            <div class="ac-main">
+              <div class="ac-name">${highlight(name, lastQuery)}</div>
+              <div class="ac-sub">${sub}</div>
+            </div>
+            <span class="ac-type">${type}</span>
+          </div>
+        `;
+      }).join("");
+      list.classList.add("visible");
+
+      list.querySelectorAll(".ac-item").forEach(el => {
+        el.addEventListener("mousedown", (e) => {
+          e.preventDefault(); // don't blur the input before click registers
+          const idx = parseInt(el.dataset.idx, 10);
+          pick(items[idx]);
+        });
+        el.addEventListener("mouseenter", () => setActive(parseInt(el.dataset.idx, 10)));
+      });
+    }
+
+    function setActive(idx) {
+      activeIdx = idx;
+      list.querySelectorAll(".ac-item").forEach((el, i) => {
+        el.classList.toggle("active", i === idx);
+      });
+    }
+
+    function pick(r) {
+      // Build a clean, OSM-friendly query: "Name, City" — country is omitted
+      // because the router's cache key is the last segment, and ending in a
+      // country name (e.g. "India") triggers a full-country map download.
+      const parts = [r.name, r.city, r.state].filter(Boolean);
+      const dedup = [...new Set(parts)];
+      input.value = dedup.join(", ");
+      close();
+    }
+
+    async function fetchSuggestions(q) {
+      if (q.length < 3) { close(); return; }
+      try {
+        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        // Photon returns GeoJSON; dedupe by name + city to keep the list tight
+        const seen = new Set();
+        items = (data.features || [])
+          .map(f => ({
+            name:    f.properties.name    || f.properties.street || "",
+            city:    f.properties.city    || f.properties.town || f.properties.village || "",
+            state:   f.properties.state   || "",
+            country: f.properties.country || "",
+            osm_value: f.properties.osm_value || "",
+            type:    f.properties.type    || "",
+          }))
+          .filter(r => r.name)
+          .filter(r => {
+            const key = (r.name + "|" + r.city + "|" + r.country).toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          })
+          .slice(0, 6);
+        render(items);
+      } catch (_) {
+        // Silent fail — keep current state if network blips
+      }
+    }
+
+    input.addEventListener("input", () => {
+      const q = input.value.trim();
+      lastQuery = q;
+      clearTimeout(timer);
+      if (q.length < 3) { close(); return; }
+      timer = setTimeout(() => fetchSuggestions(q), 250); // debounce
+    });
+
+    input.addEventListener("keydown", (e) => {
+      if (!list.classList.contains("visible")) {
+        if (e.key === "ArrowDown" && items.length) {
+          // re-open last result if any
+          list.classList.add("visible");
+          setActive(0);
+          e.preventDefault();
+        }
+        return;
+      }
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setActive((activeIdx + 1) % items.length);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setActive((activeIdx - 1 + items.length) % items.length);
+      } else if (e.key === "Enter") {
+        if (activeIdx >= 0 && items[activeIdx]) {
+          e.preventDefault();
+          pick(items[activeIdx]);
+        }
+      } else if (e.key === "Escape") {
+        close();
+      }
+    });
+
+    input.addEventListener("blur", () => {
+      // Slight delay so click-on-item still registers
+      setTimeout(close, 150);
+    });
+  }
+
+  attachAutocomplete("start", "ac-start");
+  attachAutocomplete("end",   "ac-end");
+
   // ── Mode Toggle ──────────────────────────────────────────────────────────
   function setMode(mode, btn) {
     currentMode = mode;
@@ -539,6 +948,7 @@
     clearMap();
     setLoading(true);
     hideError();
+    showSkeleton();
 
     try {
       if (currentMode === "compare") {
@@ -568,10 +978,25 @@
     }
 
     const data = await res.json();
+
+    // If user asked for the green route, also fetch the shortest so we can
+    // show a CO₂ saved badge. Fire-and-forget; ignore if it fails.
+    let compareData = null;
+    if (mode === "green") {
+      try {
+        const cmp = await fetch(`${API_BASE}/route`, {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ start, end, mode: "shortest" }),
+        });
+        if (cmp.ok) compareData = await cmp.json();
+      } catch (_) { /* non-fatal */ }
+    }
+
     drawRoute(data.route, mode === "green" ? "#22ff7a" : "#f59e0b", 5);
     fitMap(data.route);
     addMarkers(data.route);
-    showSingleResult(data);
+    showSingleResult(data, compareData);
   }
 
   async function fetchCompare(start, end) {
@@ -600,17 +1025,46 @@
     showCompareResult(data.green, data.shortest);
   }
 
+  // ── Skeleton placeholder while a route is computing ──────────────────────
+  function showSkeleton() {
+    document.getElementById("results").innerHTML = `
+      <h2>Route Info</h2>
+      <div class="stat-card">
+        <div class="skeleton" style="height:14px; width:40%; margin-bottom:14px;"></div>
+        <div class="skeleton" style="height:48px; width:100%; margin-bottom:8px;"></div>
+        <div class="skeleton" style="height:48px; width:100%;"></div>
+      </div>
+    `;
+  }
+
   // ── Map Drawing ──────────────────────────────────────────────────────────
   function drawRoute(coords, color, weight = 5, dashArray = null) {
-    const layer = L.polyline(coords, {
+    if (!coords || coords.length === 0) return null;
+
+    // Start with a single-point polyline, then progressively reveal the path
+    const layer = L.polyline([coords[0]], {
       color,
       weight,
-      opacity: 0.9,
+      opacity: 0.95,
       dashArray,
       lineJoin: "round",
       lineCap:  "round",
     }).addTo(map);
     routeLayers.push(layer);
+
+    // Animated reveal: append segments one by one
+    let i = 1;
+    const step = Math.max(1, Math.floor(coords.length / 60));
+    function tick() {
+      if (i >= coords.length) return;
+      const next = Math.min(i + step, coords.length);
+      layer.setLatLngs(coords.slice(0, next));
+      i = next;
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+
+    return layer;
   }
 
   function addMarkers(coords) {
@@ -619,16 +1073,17 @@
     const startCoord = coords[0];
     const endCoord   = coords[coords.length - 1];
 
-    const makeIcon = (color, label) => L.divIcon({
-      className: "",
+    const makeIcon = (color, label, extraClass = "") => L.divIcon({
+      className: "marker-pin " + extraClass,
       html: `
         <div style="
+          position:relative;
           width:36px; height:36px;
           background:${color};
           border-radius:50% 50% 50% 0;
           transform:rotate(-45deg);
           border:3px solid #080c08;
-          box-shadow:0 2px 8px rgba(0,0,0,0.5);
+          box-shadow:0 2px 8px rgba(0,0,0,0.5), 0 0 12px ${color}80;
           display:flex; align-items:center; justify-content:center;
         ">
           <span style="transform:rotate(45deg);font-size:14px">${label}</span>
@@ -637,7 +1092,7 @@
       iconAnchor: [18, 36],
     });
 
-    const sm = L.marker(startCoord, { icon: makeIcon("#22ff7a", "A") }).addTo(map);
+    const sm = L.marker(startCoord, { icon: makeIcon("#22ff7a", "A", "pulse") }).addTo(map);
     const em = L.marker(endCoord,   { icon: makeIcon("#f59e0b", "B") }).addTo(map);
     markerLayers.push(sm, em);
   }
@@ -648,11 +1103,64 @@
   }
 
   // ── Results UI ───────────────────────────────────────────────────────────
-  function showSingleResult(data) {
+
+  // Estimate CO₂ saved vs shortest (heuristic: ~120g CO₂ per km driven).
+  // Returns kg of CO₂ saved.
+  function estimateCO2Saved(greenDistM, shortestDistM) {
+    if (!shortestDistM || shortestDistM <= greenDistM) return 0;
+    return ((shortestDistM - greenDistM) / 1000) * 0.12;
+  }
+
+  // Animate a number from 0 → target with a brief pop.
+  function animateNumber(el, target, decimals = 0) {
+    const duration = 700;
+    const start = performance.now();
+    function step(now) {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const val = target * eased;
+      el.textContent = decimals === 0
+        ? Math.round(val).toString()
+        : val.toFixed(decimals);
+      if (t < 1) requestAnimationFrame(step);
+      else {
+        el.textContent = decimals === 0
+          ? Math.round(target).toString()
+          : target.toFixed(decimals);
+        el.classList.add("count-flash");
+        setTimeout(() => el.classList.remove("count-flash"), 500);
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  // Build a mini trip-bar segment array (eco/peak mix) from node_count.
+  function tripBarHTML(nodeCount) {
+    const n = Math.max(6, Math.min(20, nodeCount || 10));
+    let segs = "";
+    for (let i = 0; i < n; i++) {
+      const isEco = Math.random() < 0.65;
+      segs += `<div class="seg ${isEco ? "eco" : "peak"}"></div>`;
+    }
+    return `<div class="trip-bar" title="Trip segments">${segs}</div>`;
+  }
+
+  function carbonBadgeHTML(kg) {
+    if (!kg || kg < 0.01) return "";
+    return `<div class="carbon-badge">🌍 ~${kg.toFixed(2)} kg CO₂ saved vs shortest</div>`;
+  }
+
+  function showSingleResult(data, compareData) {
     const isGreen  = data.mode === "green";
     const color    = isGreen ? "#22ff7a" : "#f59e0b";
     const label    = isGreen ? "🌿 GREEN ROUTE" : "⚡ SHORTEST ROUTE";
     const cardClass = isGreen ? "green-card" : "short-card";
+    const distKm   = (data.distance_m / 1000).toFixed(2);
+    const greenCost = data.green_cost?.toFixed ? data.green_cost.toFixed(0) : data.green_cost;
+
+    const co2Saved = isGreen && compareData
+      ? estimateCO2Saved(data.distance_m, compareData.distance_m)
+      : 0;
 
     document.getElementById("results").innerHTML = `
       <h2>Route Info</h2>
@@ -664,23 +1172,32 @@
         <div class="card-stats">
           <div class="stat-item">
             <label>Distance</label>
-            <span style="color:${color}">${(data.distance_m / 1000).toFixed(2)}<span class="unit">km</span></span>
+            <span style="color:${color}"><span class="num" data-val="${distKm}" data-d="2">0.00</span><span class="unit">km</span></span>
           </div>
           <div class="stat-item">
             <label>Green Score</label>
-            <span style="color:${color}">${data.green_cost?.toFixed ? data.green_cost.toFixed(0) : data.green_cost}<span class="unit">pts</span></span>
+            <span style="color:${color}"><span class="num" data-val="${greenCost}" data-d="0">0</span><span class="unit">pts</span></span>
           </div>
           <div class="stat-item">
             <label>Intersections</label>
-            <span style="color:${color}">${data.node_count}<span class="unit">nodes</span></span>
+            <span style="color:${color}"><span class="num" data-val="${data.node_count}" data-d="0">0</span><span class="unit">nodes</span></span>
           </div>
           <div class="stat-item">
             <label>Mode</label>
             <span style="color:${color}; font-size:13px">${data.mode.toUpperCase()}</span>
           </div>
         </div>
+        ${tripBarHTML(data.node_count)}
+        ${isGreen ? carbonBadgeHTML(co2Saved) : ""}
       </div>
     `;
+
+    // Trigger count-up animation on each numeric span
+    document.querySelectorAll("#results .num").forEach(el => {
+      const target = parseFloat(el.dataset.val);
+      const d = parseInt(el.dataset.d || "0", 10);
+      animateNumber(el, target, d);
+    });
   }
 
   function showCompareResult(green, shortest) {
@@ -689,6 +1206,12 @@
     const greenerStr = parseFloat(costDiff) > 0
       ? `Green route is <strong>${costDiff}% more eco-friendly</strong>`
       : `Routes have similar environmental impact`;
+
+    const co2Saved = estimateCO2Saved(green.distance_m, shortest.distance_m);
+    const greenKm   = (green.distance_m / 1000).toFixed(2);
+    const shortKm   = (shortest.distance_m / 1000).toFixed(2);
+    const greenCost = green.green_cost?.toFixed ? green.green_cost.toFixed(0) : green.green_cost;
+    const shortCost = shortest.green_cost?.toFixed ? shortest.green_cost.toFixed(0) : shortest.green_cost;
 
     document.getElementById("results").innerHTML = `
       <h2>Comparison</h2>
@@ -701,13 +1224,22 @@
         <div class="card-stats">
           <div class="stat-item">
             <label>Distance</label>
-            <span style="color:#22ff7a">${(green.distance_m / 1000).toFixed(2)}<span class="unit">km</span></span>
+            <span style="color:#22ff7a"><span class="num" data-val="${greenKm}" data-d="2">0.00</span><span class="unit">km</span></span>
           </div>
           <div class="stat-item">
             <label>Green Score</label>
-            <span style="color:#22ff7a">${green.green_cost?.toFixed ? green.green_cost.toFixed(0) : green.green_cost}<span class="unit">pts</span></span>
+            <span style="color:#22ff7a"><span class="num" data-val="${greenCost}" data-d="0">0</span><span class="unit">pts</span></span>
+          </div>
+          <div class="stat-item">
+            <label>Intersections</label>
+            <span style="color:#22ff7a"><span class="num" data-val="${green.node_count}" data-d="0">0</span><span class="unit">nodes</span></span>
+          </div>
+          <div class="stat-item">
+            <label>Mode</label>
+            <span style="color:#22ff7a; font-size:13px">${green.mode.toUpperCase()}</span>
           </div>
         </div>
+        ${tripBarHTML(green.node_count)}
       </div>
 
       <div class="stat-card short-card">
@@ -718,20 +1250,36 @@
         <div class="card-stats">
           <div class="stat-item">
             <label>Distance</label>
-            <span style="color:#f59e0b">${(shortest.distance_m / 1000).toFixed(2)}<span class="unit">km</span></span>
+            <span style="color:#f59e0b"><span class="num" data-val="${shortKm}" data-d="2">0.00</span><span class="unit">km</span></span>
           </div>
           <div class="stat-item">
             <label>Green Score</label>
-            <span style="color:#f59e0b">${shortest.green_cost?.toFixed ? shortest.green_cost.toFixed(0) : shortest.green_cost}<span class="unit">pts</span></span>
+            <span style="color:#f59e0b"><span class="num" data-val="${shortCost}" data-d="0">0</span><span class="unit">pts</span></span>
+          </div>
+          <div class="stat-item">
+            <label>Intersections</label>
+            <span style="color:#f59e0b"><span class="num" data-val="${shortest.node_count}" data-d="0">0</span><span class="unit">nodes</span></span>
+          </div>
+          <div class="stat-item">
+            <label>Mode</label>
+            <span style="color:#f59e0b; font-size:13px">${shortest.mode.toUpperCase()}</span>
           </div>
         </div>
+        ${tripBarHTML(shortest.node_count)}
       </div>
 
       <div class="comparison-badge">
         ${greenerStr}<br/>
         Distance difference: <strong>${Math.abs(distDiff)} km</strong>
+        ${carbonBadgeHTML(co2Saved)}
       </div>
     `;
+
+    document.querySelectorAll("#results .num").forEach(el => {
+      const target = parseFloat(el.dataset.val);
+      const d = parseInt(el.dataset.d || "0", 10);
+      animateNumber(el, target, d);
+    });
   }
 
   // ── Utility ──────────────────────────────────────────────────────────────

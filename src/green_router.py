@@ -1,36 +1,58 @@
 import osmnx as ox
 import networkx as nx
 from pathlib import Path
+from src.ml_integrator import load_brain, apply_batch_green_weights
+
+# Load the AI brain into memory (we do it here so it only loads once!)
+ai_brain = load_brain("models/eco_routing_model.pkl")
+
+# Country names that must never be used as the cache key — they would force
+# a full-country graph download. Match is case-insensitive.
+_COUNTRY_BLOCKLIST = {
+    "india", "united states", "usa", "u.s.a.", "uk", "united kingdom",
+    "china", "japan", "germany", "france", "italy", "spain", "brazil",
+    "russia", "canada", "australia", "mexico", "singapore", "uae",
+    "saudi arabia", "south korea", "north korea", "indonesia", "turkey",
+    "argentina", "pakistan", "bangladesh", "nepal", "sri lanka", "bhutan",
+    "myanmar", "thailand", "vietnam", "malaysia", "philippines", "egypt",
+    "nigeria", "kenya", "south africa", "new zealand", "ireland",
+    "switzerland", "sweden", "norway", "finland", "denmark", "poland",
+    "netherlands", "belgium", "austria", "portugal", "greece", "czechia",
+    "czech republic", "hungary", "romania", "ukraine", "israel", "iran",
+    "iraq", "qatar", "oman", "kuwait", "bahrain", "jordan", "lebanon",
+}
+
+
+def _extract_city_name(query: str) -> str:
+    """
+    Pick the most likely city name from a free-form query like
+    'India Gate, New Delhi' or 'IIT Delhi, Delhi, India'.
+
+    Rules:
+      1. Strip a leading numeric / pin-code segment (e.g. '110001').
+      2. Walk segments right-to-left, skip anything in the country blocklist
+         or that looks like a country (2+ words, no spaces, generic).
+      3. Skip pure-numeric segments (postal codes).
+      4. Return the first non-skipped segment. Fall back to the last segment
+         if everything is skipped.
+    """
+    parts = [p.strip() for p in query.split(",") if p.strip()]
+    if not parts:
+        return query.strip()
+
+    for seg in reversed(parts):
+        low = seg.lower()
+        if low in _COUNTRY_BLOCKLIST:
+            continue
+        if seg.isdigit():
+            continue
+        return seg
+    return parts[-1]
 
 
 def calculate_green_cost(G):
-    print("🌿 Injecting 3D Elevation & ML weights into routing grid...")
-
-    W_LENGTH = 0.15
-    W_GRADE = 150.0
-    W_SIGNAL = 20.0
-    W_RESIDENTIAL = 10.0
-
-    for u, v, key, data in G.edges(keys=True, data=True):
-        length = data.get('length', 0)
-        grade = data.get('grade_abs', 0.0)
-
-        highway_type = data.get('highway', 'unclassified')
-        if isinstance(highway_type, list): highway_type = highway_type[0]
-
-        dest_node_data = G.nodes[v]
-        has_signal = 1 if dest_node_data.get('highway') == 'traffic_signals' else 0
-        is_residential = 1 if 'residential' in highway_type else 0
-
-        predicted_emissions = (
-                (length * W_LENGTH) +
-                (grade * length * W_GRADE) +
-                (has_signal * W_SIGNAL) +
-                (is_residential * W_RESIDENTIAL)
-        )
-        data['green_cost'] = predicted_emissions
-
-    return G
+    # Pass the graph and the model to the batch processor
+    return apply_batch_green_weights(G, ai_brain)
 
 
 def get_route_data(start_query, end_query, mode="green"):
@@ -43,9 +65,11 @@ def get_route_data(start_query, end_query, mode="green"):
     except Exception as e:
         raise ValueError("Could not find those locations. Try adding the city name (e.g., 'Taj Mahal, Agra')")
 
-    # 2. Extract the city name to save/load the correct file
-    # If user types "Gateway of India, Mumbai", we extract "Mumbai"
-    city_name = start_query.split(',')[-1].strip()
+    # 2. Extract the city name to save/load the correct file.
+    # Strategy: try the last meaningful (non-country, non-numeric) segment
+    # from the start query. Falling back to the last segment prevents
+    # accidental full-country downloads when a query ends with "India".
+    city_name = _extract_city_name(start_query)
     filename = f"{city_name.lower().replace(' ', '_')}_drive.graphml"
 
     base_dir = Path(__file__).resolve().parent.parent
